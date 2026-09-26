@@ -33,7 +33,6 @@ PAGES_DIR = os.path.join(os.path.dirname(__file__), "pages")
 # ==========================================
 # 🔍 スクショのファイル・フォルダ構成を固定でマッピング
 # ==========================================
-# 今のファイル構成を直接指定するため、内部が混在していても確実に動きます
 apps_list = {
     "01_請求書自動転記": {
         "module_name": "invoice_main_2", 
@@ -41,11 +40,11 @@ apps_list = {
     },
     "02_Excel修復ツール": {
         "module_name": "excel_fixer_4", 
-        "folder_path": PAGES_DIR  # pagesの直下にあるため
+        "folder_path": PAGES_DIR
     },
     "03_ファイル名変更": {
         "module_name": "rename_split3", 
-        "folder_path": PAGES_DIR  # pagesの直下にあるため
+        "folder_path": PAGES_DIR
     }
 }
 
@@ -142,12 +141,15 @@ if st.session_state.current_page == "🏠 ホーム":
 else:
     # 戻るボタンを画面上部に大きく配置
     if st.button("🏠 ポータルホーム（メニュー選択）に戻る", use_container_width=True):
+        # 💡 ホームに戻る際、子画面が使っていた古いkey情報を一斉にクリアする（エラー再発防止）
+        for key in list(st.session_state.keys()):
+            if key not in ["current_page"]:
+                del st.session_state[key]
         st.session_state.current_page = "🏠 ホーム"
         st.rerun()
         
     st.markdown("---")
     
-    # 選択されたアプリのパス情報を抽出
     app_info = apps_list[st.session_state.current_page]
     target_folder = app_info["folder_path"]
     target_module = app_info["module_name"]
@@ -158,11 +160,20 @@ else:
     if PAGES_DIR not in sys.path:
         sys.path.insert(0, PAGES_DIR)
         
-    # カレントディレクトリをそのプログラムの場所に変更（ExcelやJSONの相対パス読み込みエラー対策）
+    # カレントディレクトリをそのプログラムの場所に変更
     old_cwd = os.getcwd()
     os.chdir(target_folder)
         
     try:
+        # 💡 【重要】リロードする前に、すでにセッションに残ってしまっている
+        # 重複原因となるkey（'template'など）を一度強制削除してエラーを封じ込めます
+        # ただしポータルの現在地を示す 'current_page' だけは残します
+        for key in list(st.session_state.keys()):
+            if key not in ["current_page"]:
+                # ホーム画面用のボタン以外の古いコンポーネントキーを掃除
+                if not key.startswith("click_"):
+                    del st.session_state[key]
+
         # プログラムをインポートして実行
         imported_module = importlib.import_module(target_module)
         importlib.reload(imported_module)
