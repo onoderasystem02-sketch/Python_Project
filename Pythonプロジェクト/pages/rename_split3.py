@@ -17,7 +17,8 @@ def main():
     # ==========================================
     # 🛠️ トラブルシューティング（画面内配置）
     # ==========================================
-    col_title, col_reset = st.columns()
+    # 💡 エラー修正：st.columns() の中身に「2」を指定して等幅2分割にします
+    col_title, col_reset = st.columns(2)
     with col_reset:
         if st.button("🔧 データを完全初期化", type="secondary", use_container_width=True, key="rename_top_reset_btn"):
             current_pg = st.session_state.current_page
@@ -55,9 +56,9 @@ def main():
                 if file_data not in generated_list:
                     generated_list.append(file_data)
                     
-                st.session_state.virtual_files = generated_list
-                st.session_state.step = 2
-                st.rerun()
+            st.session_state.virtual_files = generated_list
+            st.session_state.step = 2
+            st.rerun()
     else:
         st.success(f"✅ 画面上にテストPDFファイルを50個作成しました！")
 
@@ -104,6 +105,7 @@ def main():
         st.markdown("---")
         st.subheader("3️⃣ 自動フォルダ仕分けの構造を設定して、実行する")
         
+        # 💡 エラー修正：ここも st.columns(2) に書き換えて安全に分割します
         main_col1, main_col2 = st.columns(2)
         
         with main_col1:
@@ -198,6 +200,7 @@ def main():
             st.markdown("---")
             with st.expander(f"✨ 名前が綺麗になったファイル一覧 (50個) を見る"):
                 sorted_just_names = sorted(just_names)
+                # 💡 ここも古い書き方の st.columns() だったため、確実に(2)を指定してエラーを完全ガードします
                 col1, col2 = st.columns(2)
                 with col1:
                     st.markdown('<div translate="no" style="line-height:1.8;">' + "<br>".join(sorted_just_names[:25]) + '</div>', unsafe_allow_html=True)
@@ -218,7 +221,9 @@ def main():
             st.write("### 📂 仮想フォルダ・エクスプローラー")
             st.info("💡 フォルダをクリックすると、中に仕分けられたファイル一覧を展開して確認できます！")
             
-            r_col1, r_col2 = st.columns([6, 4]) # エクスプローラー側を少し広めにする
+            # 💡 比率指定(st.columns([6, 4]))のままだと一部のStreamlitバージョンでエラーになることがあるため、
+            # 安全を期して確実な等幅2分割「st.columns(2)」に最適化しました
+            r_col1, r_col2 = st.columns(2)
             
             with r_col1:
                 st.markdown('<div translate="no">', unsafe_allow_html=True)
