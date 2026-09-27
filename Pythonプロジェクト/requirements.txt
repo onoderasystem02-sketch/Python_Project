@@ -1,3 +1,6 @@
+# requirements.txt の中身
 streamlit
-pandas
 openpyxl
+pdfplumber
+Pillow
+pandas
