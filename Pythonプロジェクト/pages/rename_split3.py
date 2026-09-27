@@ -15,13 +15,13 @@ def main():
     st.title("🚀 大量PDFの一括自動処理シミュレーター")
 
     # ==========================================
-    # 🛠️ トラブルシューティング（画面内配置）
+    # 🛠️ トラブルシューティング（ポータル対応リセット）
     # ==========================================
-    # 💡 エラー修正：st.columns() の中身に「2」を指定して等幅2分割にします
     col_title, col_reset = st.columns(2)
     with col_reset:
-        if st.button("🔧 データを完全初期化", type="secondary", use_container_width=True, key="rename_top_reset_btn"):
-            current_pg = st.session_state.current_page
+        if st.button("🔧 データを完全初期化", type="secondary", use_container_width=True, key="rename_top_reset_btn_final_v3"):
+            # ポータルが迷子にならないよう、現在地のページ記憶だけを死守してリセット
+            current_pg = st.session_state.get("current_page", "🏠 ホーム")
             st.session_state.clear()
             st.session_state.current_page = current_pg
             st.rerun()
@@ -29,9 +29,9 @@ def main():
     st.write("※このデモは画面上だけで完結します。実際のファイルやフォルダは作成されません。")
     st.markdown("---")
 
-    # --- セッション状態の初期化 ---
-    if "step" not in st.session_state:
-        st.session_state.step = 1
+    # --- セッション状態の初期化（ポータルとの干渉を防ぐ独自キー） ---
+    if "rename_step" not in st.session_state:
+        st.session_state.rename_step = 1
     if "virtual_files" not in st.session_state:
         st.session_state.virtual_files = [] 
     if "rename_format" not in st.session_state:
@@ -42,8 +42,8 @@ def main():
     # ==========================================
     st.subheader("1️⃣ 実験用のテストPDFファイルを自動生成する")
 
-    if st.session_state.step == 1:
-        generate_btn = st.button("📄 テストPDFファイルを50個自動生成する", type="primary", key="gen_pdf_btn_unique")
+    if st.session_state.rename_step == 1:
+        generate_btn = st.button("📄 テストPDFファイルを50個自動生成する", type="primary", key="gen_pdf_btn_final_v3")
 
         if generate_btn:
             generated_list = []
@@ -57,7 +57,7 @@ def main():
                     generated_list.append(file_data)
                     
             st.session_state.virtual_files = generated_list
-            st.session_state.step = 2
+            st.session_state.rename_step = 2
             st.rerun()
     else:
         st.success(f"✅ 画面上にテストPDFファイルを50個作成しました！")
@@ -65,7 +65,7 @@ def main():
     # ==========================================
     # 【ステップ2】リネームフォーマットと一括変更
     # ==========================================
-    if st.session_state.step >= 2:
+    if st.session_state.rename_step >= 2:
         st.markdown("---")
         st.subheader("2️⃣ 新しいファイル名の法則を入力して、一括変更する")
         
@@ -75,7 +75,7 @@ def main():
             random.shuffle(parts)
             original_names.append("-".join(parts) + ".pdf")
         
-        if st.session_state.step == 2:
+        if st.session_state.rename_step == 2:
             with st.expander(f"📦 現在の元のファイル一覧 (50個) を見る"):
                 col1, col2 = st.columns(2)
                 with col1:
@@ -87,25 +87,23 @@ def main():
                 "新しいファイル名のフォーマットを入力してください：",
                 value=st.session_state.rename_format,
                 help="[企業名] [書類名] [日付] と区切り文字（_）を組み合わせてください。",
-                key="rename_fmt_input_final"
+                key="rename_fmt_input_final_v3"
             )
             
-            rename_btn = st.button("📝 ファイル名を一括変更する", type="primary", key="rename_exec_btn_final")
+            rename_btn = st.button("📝 ファイル名を一括変更する", type="primary", key="rename_exec_btn_final_v3")
             
             if rename_btn and st.session_state.rename_format:
-                st.session_state.step = 3
+                st.session_state.rename_step = 3
                 st.rerun()
         else:
             st.success(f"✅ すべてのファイル名を 「{st.session_state.rename_format}」 に一括変更しました！")
-
     # ==========================================
     # 【ステップ3・4】ファイル仕分けの実行
     # ==========================================
-    if st.session_state.step >= 3:
+    if st.session_state.rename_step >= 3:
         st.markdown("---")
         st.subheader("3️⃣ 自動フォルダ仕分けの構造を設定して、実行する")
         
-        # 💡 エラー修正：ここも st.columns(2) に書き換えて安全に分割します
         main_col1, main_col2 = st.columns(2)
         
         with main_col1:
@@ -114,7 +112,7 @@ def main():
                 "📁 第1階層（親フォルダになる要素）",
                 ["企業名", "書類名", "日付"],
                 index=0,
-                key="layer1_select_final"
+                key="layer1_select_final_v3"
             )
             
             layer2_options = ["なし", "企業名", "書類名", "日付"]
@@ -125,7 +123,7 @@ def main():
                 "┗ 📁 第2階層（その中に作る子フォルダ）",
                 layer2_options,
                 index=0,
-                key="layer2_select_final"
+                key="layer2_select_final_v3"
             )
             
         with main_col2:
@@ -174,7 +172,6 @@ def main():
             val1 = get_value_by_label(folder_layer1)
             val2 = get_value_by_label(folder_layer2) if folder_layer2 != "なし" else None
             
-            # グラフ用の集計文字列
             if val1 and val2:
                 display_folder = f"{val1} ➔ {val2}"
             elif val1:
@@ -183,7 +180,6 @@ def main():
                 display_folder = "その他"
             folder_log[display_folder] = folder_log.get(display_folder, 0) + 1
 
-            # エクスプローラー用のデータ格納
             if val1 not in explorer_tree:
                 explorer_tree[val1] = {}
             
@@ -195,56 +191,47 @@ def main():
                 if "__files__" not in explorer_tree[val1]:
                     explorer_tree[val1]["__files__"] = []
                 explorer_tree[val1]["__files__"].append(n)
+            
         # --- ステップ3：仕分け実行前 ---
-        if st.session_state.step == 3:
+        if st.session_state.rename_step == 3:
             st.markdown("---")
             with st.expander(f"✨ 名前が綺麗になったファイル一覧 (50個) を見る"):
                 sorted_just_names = sorted(just_names)
-                # 💡 ここも古い書き方の st.columns() だったため、確実に(2)を指定してエラーを完全ガードします
                 col1, col2 = st.columns(2)
                 with col1:
                     st.markdown('<div translate="no" style="line-height:1.8;">' + "<br>".join(sorted_just_names[:25]) + '</div>', unsafe_allow_html=True)
                 with col2:
                     st.markdown('<div translate="no" style="line-height:1.8;">' + "<br>".join(sorted_just_names[25:]) + '</div>', unsafe_allow_html=True)
                 
-            sort_btn = st.button("🚀 このフォルダ構造で一括仕分けを実行する", type="primary", key="sort_run_btn_final")
+            sort_btn = st.button("🚀 このフォルダ構造で一括仕分けを実行する", type="primary", key="sort_run_btn_final_v3")
             if sort_btn:
-                st.session_state.step = 4
+                st.session_state.rename_step = 4
                 st.rerun()
 
-        # ==========================================
-        # 👑 【ステップ4】仕分け完了・レポート表示（こだわりUI！）
-        # ==========================================
-        if st.session_state.step == 4:
+        # --- ステップ4：仕分け完了・レポート表示（こだわりUI） ---
+        if st.session_state.rename_step == 4:
             st.success(f"🎉 完璧です！計 50 個のPDFを画面上の仮想フォルダへ綺麗に仕分けました！")
             
             st.write("### 📂 仮想フォルダ・エクスプローラー")
             st.info("💡 フォルダをクリックすると、中に仕分けられたファイル一覧を展開して確認できます！")
             
-            # 💡 比率指定(st.columns([6, 4]))のままだと一部のStreamlitバージョンでエラーになることがあるため、
-            # 安全を期して確実な等幅2分割「st.columns(2)」に最適化しました
             r_col1, r_col2 = st.columns(2)
             
             with r_col1:
                 st.markdown('<div translate="no">', unsafe_allow_html=True)
                 
-                # 💡 親フォルダをループ
                 for key1 in sorted(explorer_tree.keys()):
                     with st.expander(f"📁 {key1}"):
                         
-                        # 第2階層（子フォルダ）がある場合
                         if folder_layer2 != "なし":
                             for key2 in sorted(explorer_tree[key1].keys()):
-                                # 子フォルダをインデント付きの空間（入れ子）で表現
                                 with st.container():
                                     st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;📂 **{key2}**")
                                     files = sorted(explorer_tree[key1][key2])
-                                    # ファイル一覧を少し引っ込めて並べる
                                     file_text = "<br>".join([f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;📄 {f}" for f in files])
                                     st.markdown(f'<div style="line-height:1.6; color:#555;">{file_text}</div>', unsafe_allow_html=True)
-                                    st.write("") # 隙間あけ
+                                    st.write("") 
                                     
-                        # 子フォルダがなく、親の直下にファイルがある場合
                         else:
                             files = sorted(explorer_tree[key1].get("__files__", []))
                             file_text = "<br>".join([f"&nbsp;&nbsp;&nbsp;&nbsp;📄 {f}" for f in files])
@@ -257,9 +244,8 @@ def main():
                 st.bar_chart(folder_log)
                 
             st.markdown("---")
-            # 💡 keyの重複バグを防ぐ専用マーク付きボタン
-            if st.button("🔄 もう一度最初から実験する", type="primary", key="rename_restart_btn_final"):
-                st.session_state.step = 1
+            if st.button("🔄 もう一度最初から実験する", type="primary", key="rename_restart_btn_final_v3"):
+                st.session_state.rename_step = 1
                 st.session_state.virtual_files = []
                 st.rerun()
 
