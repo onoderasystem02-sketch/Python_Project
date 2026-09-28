@@ -139,9 +139,20 @@ if st.session_state.current_page == "🏠 ホーム":
 # 🚀 各アプリケーションの安全な動的呼び出し
 # ==========================================
 else:
+    # ✨ 【追加】アプリが「他のページから切り替わってきた直後の1回目」だけ、前のアプリのデータを掃除する
+    if "last_page" not in st.session_state:
+        st.session_state.last_page = ""
+        
+    if st.session_state.last_page != st.session_state.current_page:
+        # ページ切り替えの瞬間だけお掃除を実行（ホームボタン以外のセッションを消去）
+        for key in list(st.session_state.keys()):
+            if key not in ["current_page", "last_page"] and not key.startswith("click_"):
+                del st.session_state[key]
+        st.session_state.last_page = st.session_state.current_page
+
     # 戻るボタンを画面上部に大きく配置
     if st.button("🏠 ポータルホーム（メニュー選択）に戻る", use_container_width=True):
-        # 💡 ホームに戻る際、子画面が使っていた古いkey情報を一斉にクリアする（エラー再発防止）
+        # ホームに戻る際、すべてのアプリが使っていた古いデータを完全にクリアする
         for key in list(st.session_state.keys()):
             if key not in ["current_page"]:
                 del st.session_state[key]
@@ -154,7 +165,7 @@ else:
     target_folder = app_info["folder_path"]
     target_module = app_info["module_name"]
     
-    # 💡 パス問題の解決：実行するフォルダのシステムパスを追加
+    # パス問題の解決：実行するフォルダのシステムパスを追加
     if target_folder not in sys.path:
         sys.path.insert(0, target_folder)
     if PAGES_DIR not in sys.path:
@@ -165,16 +176,8 @@ else:
     os.chdir(target_folder)
         
     try:
-        # 💡 【重要】リロードする前に、すでにセッションに残ってしまっている
-        # 重複原因となるkey（'template'など）を一度強制削除してエラーを封じ込めます
-        # ただしポータルの現在地を示す 'current_page' だけは残します
-        for key in list(st.session_state.keys()):
-            if key not in ["current_page"]:
-                # ホーム画面用のボタン以外の古いコンポーネントキーを掃除
-                if not key.startswith("click_"):
-                    del st.session_state[key]
-
-        # プログラムをインポートして実行
+        # 🛠️ 【改善】毎回のループでセッションを強制全削除する危険な処理を撤廃しました
+        # これにより、子画面アプリの st.rerun() 時にもセッション状態（ステップ数など）が完璧に維持されます
         imported_module = importlib.import_module(target_module)
         importlib.reload(imported_module)
         imported_module.main()
